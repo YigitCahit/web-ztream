@@ -44,20 +44,20 @@ export default async function Home({ searchParams }: HomePageProps) {
                 >
                   Paneli Aç
                 </Link>
-                <Link
+                <a
                   href="/api/auth/logout"
-                  className="rounded-xl border border-[var(--line)] bg-white/70 px-5 py-3 text-center font-semibold text-[var(--ink-main)] transition hover:bg-white"
+                  className="rounded-xl border border-[var(--line)] bg-white/70 px-5 py-3 text-center font-semibold text-[var(--ink-main)]"
                 >
                   Çıkış Yap
-                </Link>
+                </a>
               </>
             ) : (
-              <Link
+              <a
                 href="/api/auth/login"
-                className="rounded-xl bg-[var(--accent)] px-5 py-3 text-center font-semibold text-white transition hover:bg-[var(--accent-strong)]"
+                className="rounded-xl bg-[var(--accent)] px-5 py-3 text-center font-semibold text-white transition hover:bg-[var(--accent-hover)]"
               >
                 Kick ile Giriş Yap
-              </Link>
+              </a>
             )}
           </div>
         </header>
