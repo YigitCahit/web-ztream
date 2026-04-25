@@ -54,11 +54,12 @@ export default function DashboardClient({
 
   async function refreshDashboard(): Promise<void> {
     const response = await fetch("/api/dashboard", { cache: "no-store" });
+    const payload = (await response.json()) as DashboardPayload & { error?: string };
+
     if (!response.ok) {
-      throw new Error("Panel verileri yenilenemedi.");
+      throw new Error(payload.error ?? "Panel verileri yenilenemedi.");
     }
 
-    const payload = (await response.json()) as DashboardPayload;
     setData(payload);
   }
 

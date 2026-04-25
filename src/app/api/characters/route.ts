@@ -5,10 +5,24 @@ import { getSessionFromRequest } from "@/lib/auth";
 import { randomToken } from "@/lib/crypto";
 import {
   addCharacterToUserProfile,
+  getOrCreateUserProfile,
   getUserProfileById,
   setActiveCharacterForUserProfile,
 } from "@/lib/profile";
 import { uploadSpriteForUser, validateSpriteUpload } from "@/lib/uploads";
+
+async function getProfileFromSession(session: {
+  userId: number;
+  username: string;
+  overlayKey: string;
+}) {
+  const existing = await getUserProfileById(session.userId);
+  if (existing) {
+    return existing;
+  }
+
+  return getOrCreateUserProfile(session.userId, session.username, session.overlayKey);
+}
 
 function parseNumber(
   input: FormDataEntryValue | null,
@@ -34,7 +48,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Oturum bulunamadi." }, { status: 401 });
   }
 
-  const profile = await getUserProfileById(session.userId);
+  const profile = await getProfileFromSession(session);
   if (!profile) {
     return NextResponse.json({ error: "Profil bulunamadi." }, { status: 404 });
   }
@@ -54,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Oturum bulunamadi." }, { status: 401 });
   }
 
-  const profile = await getUserProfileById(session.userId);
+  const profile = await getProfileFromSession(session);
   if (!profile) {
     return NextResponse.json({ error: "Profil bulunamadi." }, { status: 404 });
   }
@@ -119,7 +133,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Oturum bulunamadi." }, { status: 401 });
   }
 
-  const profile = await getUserProfileById(session.userId);
+  const profile = await getProfileFromSession(session);
   if (!profile) {
     return NextResponse.json({ error: "Profil bulunamadi." }, { status: 404 });
   }

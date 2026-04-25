@@ -4,7 +4,7 @@ import type { DashboardPayload } from "@/types/domain";
 import { getSessionFromRequest } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { ensureChatMessageSubscription } from "@/lib/kick";
-import { getUserProfileById } from "@/lib/profile";
+import { getOrCreateUserProfile, getUserProfileById } from "@/lib/profile";
 import { getStorageMode } from "@/lib/store";
 import { getOriginFromRequestUrl } from "@/lib/url";
 
@@ -32,7 +32,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Oturum bulunamadi." }, { status: 401 });
   }
 
-  const profile = await getUserProfileById(session.userId);
+  let profile = await getUserProfileById(session.userId);
+  if (!profile) {
+    try {
+      profile = await getOrCreateUserProfile(
+        session.userId,
+        session.username,
+        session.overlayKey,
+      );
+    } catch (error) {
+      console.error("Dashboard API profil self-heal hatasi:", error);
+    }
+  }
+
   if (!profile) {
     return NextResponse.json({ error: "Profil bulunamadi." }, { status: 404 });
   }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth";
 import {
   deleteCharacterFromUserProfile,
+  getOrCreateUserProfile,
   getUserProfileById,
 } from "@/lib/profile";
 
@@ -21,7 +22,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Oturum bulunamadi." }, { status: 401 });
   }
 
-  const profile = await getUserProfileById(session.userId);
+  const profile =
+    (await getUserProfileById(session.userId)) ??
+    (await getOrCreateUserProfile(
+      session.userId,
+      session.username,
+      session.overlayKey,
+    ));
   if (!profile) {
     return NextResponse.json({ error: "Profil bulunamadi." }, { status: 404 });
   }

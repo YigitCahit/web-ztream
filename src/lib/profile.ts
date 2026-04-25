@@ -61,6 +61,21 @@ async function generateUniqueOverlayKey(): Promise<string> {
   return randomToken(30);
 }
 
+async function resolveNewOverlayKey(
+  userId: number,
+  preferredOverlayKey?: string,
+): Promise<string> {
+  const preferred = preferredOverlayKey?.trim();
+  if (preferred && preferred.length > 0) {
+    const existingUserId = await getJson<number>(keys.overlayUserMap(preferred));
+    if (!existingUserId || existingUserId === userId) {
+      return preferred;
+    }
+  }
+
+  return generateUniqueOverlayKey();
+}
+
 export async function saveUserProfile(profile: UserProfile): Promise<UserProfile> {
   const normalized = normalizeProfile({
     ...profile,
@@ -85,7 +100,16 @@ export async function getUserProfileById(
     return null;
   }
 
-  return normalizeProfile(profile);
+  const normalized = normalizeProfile(profile);
+
+  // Overlay routes resolve by overlayKey -> userId. Rehydrate this index on reads.
+  await setJson(
+    keys.overlayUserMap(normalized.overlayKey),
+    normalized.userId,
+    PROFILE_TTL_SECONDS,
+  );
+
+  return normalized;
 }
 
 export async function getUserProfileByOverlayKey(
@@ -102,6 +126,7 @@ export async function getUserProfileByOverlayKey(
 export async function getOrCreateUserProfile(
   userId: number,
   username: string,
+  preferredOverlayKey?: string,
 ): Promise<UserProfile> {
   const existing = await getUserProfileById(userId);
   if (existing) {
@@ -111,7 +136,7 @@ export async function getOrCreateUserProfile(
     });
   }
 
-  const overlayKey = await generateUniqueOverlayKey();
+  const overlayKey = await resolveNewOverlayKey(userId, preferredOverlayKey);
   const defaults = createDefaultCharacterSet();
   const now = new Date().toISOString();
 

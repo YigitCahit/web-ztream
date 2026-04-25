@@ -35,7 +35,11 @@ export default async function DashboardPage({
 
   if (!profile) {
     try {
-      profile = await getOrCreateUserProfile(session.userId, session.username);
+      profile = await getOrCreateUserProfile(
+        session.userId,
+        session.username,
+        session.overlayKey,
+      );
     } catch (error) {
       console.error("Dashboard profil self-heal hatasi:", error);
     }
