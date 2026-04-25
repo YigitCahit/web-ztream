@@ -217,12 +217,12 @@ export default function DashboardClient({
           >
             Overlay Önizleme
           </Link>
-          <Link
+          <a
             href="/api/auth/logout"
             className="rounded-xl bg-[var(--ink-main)] px-4 py-2 text-sm font-semibold text-white"
           >
             Çıkış Yap
-          </Link>
+          </a>
         </div>
       </header>
 
