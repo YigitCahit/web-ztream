@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import type { DashboardPayload } from "@/types/domain";
 import DashboardClient from "@/components/DashboardClient";
 import { getSessionFromServerComponent, SESSION_COOKIE_NAME } from "@/lib/auth";
-import { getUserProfileById } from "@/lib/profile";
+import { getOrCreateUserProfile, getUserProfileById } from "@/lib/profile";
 import { getOriginFromHeaders } from "@/lib/url";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +31,16 @@ export default async function DashboardPage({
     redirect("/?auth_error=session_kv_yok");
   }
 
-  const profile = await getUserProfileById(session.userId);
+  let profile = await getUserProfileById(session.userId);
+
+  if (!profile) {
+    try {
+      profile = await getOrCreateUserProfile(session.userId, session.username);
+    } catch (error) {
+      console.error("Dashboard profil self-heal hatasi:", error);
+    }
+  }
+
   if (!profile) {
     redirect("/?auth_error=profil_yok");
   }
