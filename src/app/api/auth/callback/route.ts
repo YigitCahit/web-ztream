@@ -9,6 +9,7 @@ import {
 } from "@/lib/kick";
 import { parseOAuthState } from "@/lib/oauth-state";
 import { getOrCreateUserProfile } from "@/lib/profile";
+import { createSessionFinalizeTicket } from "@/lib/session-ticket";
 
 function buildHomeErrorRedirect(origin: string, message: string): NextResponse {
   const url = new URL("/", origin);
@@ -72,12 +73,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         ? stateRecord.redirectTo
         : "/dashboard";
 
-    const redirectUrl = new URL(redirectPath, origin);
-    if (subscriptionWarning) {
-      redirectUrl.searchParams.set("warning", "subscription");
-    }
+    const ticket = createSessionFinalizeTicket({
+      sessionId: session.sessionId,
+      redirectTo: redirectPath,
+      subscriptionWarning,
+    });
 
-    const response = NextResponse.redirect(redirectUrl);
+    const finalizeUrl = new URL("/api/auth/finalize", origin);
+    finalizeUrl.searchParams.set("ticket", ticket);
+
+    // OAuth callback can be treated as cross-site by some browsers.
+    // Finalizing session on a same-site hop improves cookie persistence.
+    const response = NextResponse.redirect(finalizeUrl, { status: 302 });
     setSessionCookie(response, session.sessionId);
     return response;
   } catch (error) {
