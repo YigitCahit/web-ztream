@@ -59,7 +59,7 @@ export default async function DashboardPage({
     username: profile.username,
     userId: profile.userId,
     overlayKey: profile.overlayKey,
-    overlayUrl: `${origin}/overlay/${profile.overlayKey}`,
+    overlayUrl: `${origin}/overlay/${profile.overlayKey}?u=${profile.userId}`,
     characters: profile.characters,
     activeCharacterId: profile.activeCharacterId,
     warnings: warningMessage ? [warningMessage] : [],

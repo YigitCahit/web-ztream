@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/lib/env";
-import { getActiveCharacter, getUserProfileByOverlayKey } from "@/lib/profile";
+import { getActiveCharacter, getUserProfileByOverlayLookup } from "@/lib/profile";
 
 type RouteContext = {
   params: Promise<{
@@ -9,10 +9,23 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_: Request, context: RouteContext): Promise<NextResponse> {
-  const { overlayKey } = await context.params;
+function parseUserIdHint(value: string | null): number | undefined {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
 
-  const profile = await getUserProfileByOverlayKey(overlayKey);
+  return Math.trunc(parsed);
+}
+
+export async function GET(
+  request: NextRequest,
+  context: RouteContext,
+): Promise<NextResponse> {
+  const { overlayKey } = await context.params;
+  const userIdHint = parseUserIdHint(request.nextUrl.searchParams.get("u"));
+
+  const profile = await getUserProfileByOverlayLookup(overlayKey, userIdHint);
   if (!profile) {
     return NextResponse.json({ error: "Overlay bulunamadi." }, { status: 404 });
   }

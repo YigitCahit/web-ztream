@@ -6,6 +6,7 @@ import type { OverlayEvent, StoredCharacter } from "@/types/domain";
 
 type OverlayClientProps = {
   overlayKey: string;
+  userIdHint: number | null;
 };
 
 type OverlayConfigResponse = {
@@ -42,7 +43,10 @@ function clamp(min: number, value: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-export default function OverlayClient({ overlayKey }: OverlayClientProps) {
+export default function OverlayClient({
+  overlayKey,
+  userIdHint,
+}: OverlayClientProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const avatarsRef = useRef<Avatar[]>([]);
   const cursorRef = useRef(0);
@@ -56,7 +60,11 @@ export default function OverlayClient({ overlayKey }: OverlayClientProps) {
 
     const loadConfig = async () => {
       try {
-        const response = await fetch(`/api/overlay/config/${overlayKey}`, {
+        const configUrl = userIdHint
+          ? `/api/overlay/config/${overlayKey}?u=${userIdHint}`
+          : `/api/overlay/config/${overlayKey}`;
+
+        const response = await fetch(configUrl, {
           cache: "no-store",
         });
 
@@ -87,7 +95,7 @@ export default function OverlayClient({ overlayKey }: OverlayClientProps) {
       stopped = true;
       window.clearInterval(interval);
     };
-  }, [overlayKey]);
+  }, [overlayKey, userIdHint]);
 
   useEffect(() => {
     if (!config) {
@@ -262,10 +270,16 @@ export default function OverlayClient({ overlayKey }: OverlayClientProps) {
 
     const poll = async () => {
       try {
-        const response = await fetch(
-          `/api/overlay/events/${overlayKey}?cursor=${cursorRef.current}`,
-          { cache: "no-store" },
-        );
+        const params = new URLSearchParams({
+          cursor: String(cursorRef.current),
+        });
+        if (userIdHint) {
+          params.set("u", String(userIdHint));
+        }
+
+        const response = await fetch(`/api/overlay/events/${overlayKey}?${params}`, {
+          cache: "no-store",
+        });
 
         const payload = (await response.json()) as OverlayEventsResponse;
         if (!response.ok) {
@@ -299,7 +313,7 @@ export default function OverlayClient({ overlayKey }: OverlayClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [config, overlayKey]);
+  }, [config, overlayKey, userIdHint]);
 
   return (
     <div className="overlay-stage">

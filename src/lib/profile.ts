@@ -123,6 +123,31 @@ export async function getUserProfileByOverlayKey(
   return getUserProfileById(userId);
 }
 
+export async function getUserProfileByOverlayLookup(
+  overlayKey: string,
+  userIdHint?: number,
+): Promise<UserProfile | null> {
+  const byOverlayMap = await getUserProfileByOverlayKey(overlayKey);
+  if (byOverlayMap) {
+    return byOverlayMap;
+  }
+
+  if (!Number.isFinite(userIdHint) || !userIdHint || userIdHint <= 0) {
+    return null;
+  }
+
+  const byUserId = await getUserProfileById(userIdHint);
+  if (!byUserId) {
+    return null;
+  }
+
+  if (byUserId.overlayKey !== overlayKey) {
+    return null;
+  }
+
+  return byUserId;
+}
+
 export async function getOrCreateUserProfile(
   userId: number,
   username: string,
