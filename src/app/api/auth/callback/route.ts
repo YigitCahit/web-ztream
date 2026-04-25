@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import type { OAuthStateRecord } from "@/types/domain";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { env } from "@/lib/env";
 import {
@@ -8,8 +7,7 @@ import {
   exchangeKickCodeForToken,
   fetchKickCurrentUser,
 } from "@/lib/kick";
-import { keys } from "@/lib/keys";
-import { deleteKey, getJson } from "@/lib/store";
+import { parseOAuthState } from "@/lib/oauth-state";
 import { getOriginFromRequestUrl } from "@/lib/url";
 import { getOrCreateUserProfile } from "@/lib/profile";
 
@@ -18,6 +16,8 @@ function buildHomeErrorRedirect(origin: string, message: string): NextResponse {
   url.searchParams.set("auth_error", message);
   return NextResponse.redirect(url);
 }
+
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const origin = getOriginFromRequestUrl(request.url);
@@ -32,8 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return buildHomeErrorRedirect(origin, "kick_ayar_eksik");
   }
 
-  const stateRecord = await getJson<OAuthStateRecord>(keys.oauthState(state));
-  await deleteKey(keys.oauthState(state));
+  const stateRecord = parseOAuthState(state);
 
   if (!stateRecord) {
     return buildHomeErrorRedirect(origin, "state_gecersiz");
