@@ -3,6 +3,7 @@ import "server-only";
 import { createHmac, timingSafeEqual } from "crypto";
 
 import { randomToken } from "@/lib/crypto";
+import type { SessionRecord } from "@/types/domain";
 
 const SESSION_TICKET_VERSION = 1;
 const SESSION_TICKET_MAX_AGE_MS = 2 * 60 * 1000;
@@ -12,7 +13,7 @@ type SessionTicketPayload = {
   v: number;
   iat: number;
   nonce: string;
-  sid: string;
+  session: SessionRecord;
   rt: string;
   sw?: 1;
 };
@@ -39,7 +40,7 @@ function safeCompare(left: string, right: string): boolean {
 }
 
 export function createSessionFinalizeTicket(input: {
-  sessionId: string;
+  session: SessionRecord;
   redirectTo: string;
   subscriptionWarning?: boolean;
 }): string {
@@ -47,7 +48,7 @@ export function createSessionFinalizeTicket(input: {
     v: SESSION_TICKET_VERSION,
     iat: Date.now(),
     nonce: randomToken(16),
-    sid: input.sessionId,
+    session: input.session,
     rt: input.redirectTo,
     sw: input.subscriptionWarning ? 1 : undefined,
   };
@@ -59,7 +60,7 @@ export function createSessionFinalizeTicket(input: {
 }
 
 export function parseSessionFinalizeTicket(ticket: string): {
-  sessionId: string;
+  session: SessionRecord;
   redirectTo: string;
   subscriptionWarning: boolean;
 } | null {
@@ -90,7 +91,29 @@ export function parseSessionFinalizeTicket(ticket: string): {
       return null;
     }
 
-    if (typeof decoded.sid !== "string" || decoded.sid.length < 16) {
+    if (!decoded.session || typeof decoded.session !== "object") {
+      return null;
+    }
+
+    const session = decoded.session as Partial<SessionRecord>;
+    if (
+      typeof session.sessionId !== "string" ||
+      session.sessionId.length < 16 ||
+      typeof session.userId !== "number" ||
+      !Number.isFinite(session.userId) ||
+      session.userId <= 0 ||
+      typeof session.username !== "string" ||
+      session.username.length < 1 ||
+      typeof session.overlayKey !== "string" ||
+      session.overlayKey.length < 1 ||
+      typeof session.accessToken !== "string" ||
+      session.accessToken.length < 1 ||
+      typeof session.accessTokenExpiresAt !== "number" ||
+      !Number.isFinite(session.accessTokenExpiresAt) ||
+      typeof session.scope !== "string" ||
+      typeof session.createdAt !== "number" ||
+      !Number.isFinite(session.createdAt)
+    ) {
       return null;
     }
 
@@ -103,7 +126,7 @@ export function parseSessionFinalizeTicket(ticket: string): {
     }
 
     return {
-      sessionId: decoded.sid,
+      session: session as SessionRecord,
       redirectTo: decoded.rt,
       subscriptionWarning: decoded.sw === 1,
     };

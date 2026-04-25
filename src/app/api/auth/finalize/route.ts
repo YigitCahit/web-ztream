@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { setSessionCookie } from "@/lib/auth";
+import { setSessionBootstrapCookie, setSessionCookie, updateSession } from "@/lib/auth";
 import { parseSessionFinalizeTicket } from "@/lib/session-ticket";
 
 export const runtime = "nodejs";
@@ -29,7 +29,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     redirectUrl.searchParams.set("warning", "subscription");
   }
 
+  try {
+    await updateSession(parsedTicket.session);
+  } catch (error) {
+    console.error("Session finalize KV yazimi basarisiz:", error);
+  }
+
   const response = NextResponse.redirect(redirectUrl, { status: 302 });
-  setSessionCookie(response, parsedTicket.sessionId);
+  setSessionCookie(response, parsedTicket.session.sessionId);
+  setSessionBootstrapCookie(response, parsedTicket.session);
   return response;
 }

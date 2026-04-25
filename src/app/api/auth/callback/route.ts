@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createSession, setSessionCookie } from "@/lib/auth";
+import {
+  createSession,
+  setSessionBootstrapCookie,
+  setSessionCookie,
+} from "@/lib/auth";
 import { env } from "@/lib/env";
 import {
   ensureChatMessageSubscription,
@@ -74,7 +78,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         : "/dashboard";
 
     const ticket = createSessionFinalizeTicket({
-      sessionId: session.sessionId,
+      session,
       redirectTo: redirectPath,
       subscriptionWarning,
     });
@@ -86,6 +90,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     // Finalizing session on a same-site hop improves cookie persistence.
     const response = NextResponse.redirect(finalizeUrl, { status: 302 });
     setSessionCookie(response, session.sessionId);
+    setSessionBootstrapCookie(response, session);
     return response;
   } catch (error) {
     console.error("OAuth callback hatasi:", error);

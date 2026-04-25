@@ -7,9 +7,14 @@ import { NextResponse } from "next/server";
 import type { SessionRecord } from "@/types/domain";
 import { randomToken } from "@/lib/crypto";
 import { keys } from "@/lib/keys";
+import {
+  createSessionBootstrapToken,
+  parseSessionBootstrapToken,
+} from "@/lib/session-bootstrap";
 import { deleteKey, getJson, setJson } from "@/lib/store";
 
 export const SESSION_COOKIE_NAME = "ztream_session";
+export const SESSION_BOOTSTRAP_COOKIE_NAME = "ztream_session_bootstrap";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 type SessionCreateInput = {
@@ -73,9 +78,34 @@ export function setSessionCookie(response: NextResponse, sessionId: string): voi
   });
 }
 
+export function setSessionBootstrapCookie(
+  response: NextResponse,
+  session: SessionRecord,
+): void {
+  response.cookies.set({
+    name: SESSION_BOOTSTRAP_COOKIE_NAME,
+    value: createSessionBootstrapToken(session),
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_TTL_SECONDS,
+  });
+}
+
 export function clearSessionCookie(response: NextResponse): void {
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
+    value: "",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
+  });
+
+  response.cookies.set({
+    name: SESSION_BOOTSTRAP_COOKIE_NAME,
     value: "",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -89,11 +119,61 @@ export async function getSessionFromRequest(
   request: NextRequest,
 ): Promise<SessionRecord | null> {
   const sessionId = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  return getSessionById(sessionId);
+  const session = await getSessionById(sessionId);
+  if (session) {
+    return session;
+  }
+
+  const bootstrapToken = request.cookies.get(SESSION_BOOTSTRAP_COOKIE_NAME)?.value;
+  if (!bootstrapToken) {
+    return null;
+  }
+
+  const fallback = parseSessionBootstrapToken(bootstrapToken);
+  if (!fallback) {
+    return null;
+  }
+
+  if (sessionId && fallback.sessionId !== sessionId) {
+    return null;
+  }
+
+  try {
+    await updateSession(fallback);
+  } catch (error) {
+    console.error("Session bootstrap KV yazimi basarisiz:", error);
+  }
+
+  return fallback;
 }
 
 export async function getSessionFromServerComponent(): Promise<SessionRecord | null> {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  return getSessionById(sessionId);
+  const session = await getSessionById(sessionId);
+  if (session) {
+    return session;
+  }
+
+  const bootstrapToken = cookieStore.get(SESSION_BOOTSTRAP_COOKIE_NAME)?.value;
+  if (!bootstrapToken) {
+    return null;
+  }
+
+  const fallback = parseSessionBootstrapToken(bootstrapToken);
+  if (!fallback) {
+    return null;
+  }
+
+  if (sessionId && fallback.sessionId !== sessionId) {
+    return null;
+  }
+
+  try {
+    await updateSession(fallback);
+  } catch (error) {
+    console.error("Session bootstrap KV yazimi basarisiz:", error);
+  }
+
+  return fallback;
 }

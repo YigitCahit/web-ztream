@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 import type { DashboardPayload } from "@/types/domain";
 import DashboardClient from "@/components/DashboardClient";
-import { getSessionById, SESSION_COOKIE_NAME } from "@/lib/auth";
+import { getSessionFromServerComponent, SESSION_COOKIE_NAME } from "@/lib/auth";
 import { getUserProfileById } from "@/lib/profile";
 import { getOriginFromHeaders } from "@/lib/url";
 
@@ -21,7 +21,7 @@ export default async function DashboardPage({
   const params = await searchParams;
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  const session = await getSessionById(sessionId);
+  const session = await getSessionFromServerComponent();
 
   if (!sessionId) {
     redirect("/?auth_error=session_yok");
