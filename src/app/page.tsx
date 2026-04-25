@@ -13,6 +13,8 @@ const authErrorMap: Record<string, string> = {
   kick_ayar_eksik: "Kick OAuth ayarları eksik. .env değerlerini kontrol edin.",
   state_gecersiz: "Giriş doğrulaması geçersiz oldu. Tekrar deneyin.",
   oauth_hatasi: "Kick OAuth işlemi sırasında bir hata oluştu.",
+  session_yok: "Oturum çerezi alınamadı. Callback domain ayarını kontrol edin.",
+  profil_yok: "Oturum var ama profil bulunamadı. Tekrar giriş yapmayı deneyin.",
 };
 
 export default async function Home({ searchParams }: HomePageProps) {

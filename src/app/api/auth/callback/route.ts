@@ -8,7 +8,6 @@ import {
   fetchKickCurrentUser,
 } from "@/lib/kick";
 import { parseOAuthState } from "@/lib/oauth-state";
-import { getOriginFromRequestUrl } from "@/lib/url";
 import { getOrCreateUserProfile } from "@/lib/profile";
 
 function buildHomeErrorRedirect(origin: string, message: string): NextResponse {
@@ -20,7 +19,7 @@ function buildHomeErrorRedirect(origin: string, message: string): NextResponse {
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const origin = getOriginFromRequestUrl(request.url);
+  const origin = request.nextUrl.origin;
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
 

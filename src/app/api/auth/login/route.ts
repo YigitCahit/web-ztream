@@ -4,7 +4,6 @@ import { sha256Base64Url, randomToken } from "@/lib/crypto";
 import { env } from "@/lib/env";
 import { buildKickAuthorizeUrl } from "@/lib/kick";
 import { createOAuthState } from "@/lib/oauth-state";
-import { getOriginFromRequestUrl } from "@/lib/url";
 
 function getSafeRedirectPath(value: string | null): string {
   if (!value || !value.startsWith("/")) {
@@ -12,6 +11,29 @@ function getSafeRedirectPath(value: string | null): string {
   }
 
   return value;
+}
+
+function resolveRedirectUri(requestOrigin: string): string {
+  const fallbackUri = `${requestOrigin}/api/auth/callback`;
+
+  if (!env.kickRedirectUri) {
+    return fallbackUri;
+  }
+
+  try {
+    const configured = new URL(env.kickRedirectUri);
+    if (configured.origin !== requestOrigin) {
+      console.warn(
+        "KICK_REDIRECT_URI host mismatch. Request origin callback URI kullaniliyor.",
+      );
+      return fallbackUri;
+    }
+
+    return configured.toString();
+  } catch {
+    console.warn("KICK_REDIRECT_URI gecersiz. Request origin callback URI kullaniliyor.");
+    return fallbackUri;
+  }
 }
 
 export const runtime = "nodejs";
@@ -27,11 +49,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const origin = getOriginFromRequestUrl(request.url);
-  const redirectUri =
-    env.kickRedirectUri && env.kickRedirectUri.length > 0
-      ? env.kickRedirectUri
-      : `${origin}/api/auth/callback`;
+  const origin = request.nextUrl.origin;
+  const redirectUri = resolveRedirectUri(origin);
 
   const codeVerifier = randomToken(96);
   const codeChallenge = sha256Base64Url(codeVerifier);

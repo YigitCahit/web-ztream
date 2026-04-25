@@ -21,12 +21,12 @@ export default async function DashboardPage({
   const session = await getSessionFromServerComponent();
 
   if (!session) {
-    redirect("/");
+    redirect("/?auth_error=session_yok");
   }
 
   const profile = await getUserProfileById(session.userId);
   if (!profile) {
-    redirect("/");
+    redirect("/?auth_error=profil_yok");
   }
 
   const origin = await getOriginFromHeaders();
