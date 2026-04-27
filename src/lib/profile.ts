@@ -3,7 +3,14 @@ import "server-only";
 import type { OverlayEvent, StoredCharacter, UserProfile } from "@/types/domain";
 import { randomToken } from "@/lib/crypto";
 import { keys } from "@/lib/keys";
-import { appendToList, deleteKey, getJson, readList, setJson } from "@/lib/store";
+import {
+  appendToList,
+  deleteKey,
+  getJson,
+  getStorageMode,
+  readList,
+  setJson,
+} from "@/lib/store";
 
 const PROFILE_TTL_SECONDS = 60 * 60 * 24 * 90;
 const EVENTS_TTL_SECONDS = 60 * 60 * 24;
@@ -138,7 +145,19 @@ export async function getUserProfileByOverlayLookup(
 
   const byUserId = await getUserProfileById(userIdHint);
   if (!byUserId) {
-    return null;
+    if (getStorageMode() !== "memory") {
+      return null;
+    }
+
+    try {
+      return await getOrCreateUserProfile(
+        userIdHint,
+        `user-${userIdHint}`,
+        overlayKey,
+      );
+    } catch {
+      return null;
+    }
   }
 
   if (byUserId.overlayKey !== overlayKey) {
