@@ -160,8 +160,10 @@ export async function getUserProfileByOverlayLookup(
     }
   }
 
+  // If userId hint is valid, allow stale overlay keys to keep working.
+  // This prevents transient 404s when profile/index state was rotated or rebuilt.
   if (byUserId.overlayKey !== overlayKey) {
-    return null;
+    return byUserId;
   }
 
   return byUserId;
