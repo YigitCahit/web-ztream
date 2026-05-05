@@ -167,7 +167,20 @@ export default function OverlayClient({
         }
 
         const sprite = spriteRef.current;
-        if (sprite) {
+        const spriteReady = Boolean(sprite && sprite.complete && sprite.naturalWidth > 0);
+        const baseX = avatar.x;
+        const baseY = avatar.y;
+        const size = character.displaySize;
+        const labelY = Math.max(18, baseY - 12);
+
+        context.save();
+        context.fillStyle = "rgba(15, 28, 25, 0.28)";
+        context.beginPath();
+        context.ellipse(baseX + size / 2, baseY + size / 2, size * 0.48, size * 0.42, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+
+        if (spriteReady && sprite) {
           const sx = avatar.frame * character.frameWidth;
           context.save();
 
@@ -179,10 +192,10 @@ export default function OverlayClient({
               0,
               character.frameWidth,
               character.frameHeight,
-              -avatar.x - character.displaySize,
-              avatar.y,
-              character.displaySize,
-              character.displaySize,
+              -baseX - size,
+              baseY,
+              size,
+              size,
             );
           } else {
             context.drawImage(
@@ -191,27 +204,36 @@ export default function OverlayClient({
               0,
               character.frameWidth,
               character.frameHeight,
-              avatar.x,
-              avatar.y,
-              character.displaySize,
-              character.displaySize,
+              baseX,
+              baseY,
+              size,
+              size,
             );
           }
 
           context.restore();
+        } else {
+          context.save();
+          context.fillStyle = "rgba(255, 111, 47, 0.72)";
+          context.beginPath();
+          context.arc(baseX + size / 2, baseY + size / 2, size * 0.18, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
         }
 
-        context.fillStyle = "#fefefe";
+        context.save();
         context.font = "700 20px var(--font-space-grotesk), sans-serif";
         context.textAlign = "center";
-        context.shadowColor = "rgba(0, 0, 0, 0.8)";
-        context.shadowBlur = 8;
-        context.fillText(
-          avatar.username,
-          avatar.x + character.displaySize / 2,
-          avatar.y - 10,
-        );
-        context.shadowBlur = 0;
+        context.shadowColor = "rgba(0, 0, 0, 0.85)";
+        context.shadowBlur = 10;
+        const labelWidth = Math.min(size + 80, Math.max(120, context.measureText(avatar.username).width + 24));
+        context.fillStyle = "rgba(9, 16, 14, 0.5)";
+        context.beginPath();
+        context.roundRect(baseX + size / 2 - labelWidth / 2, labelY - 22, labelWidth, 30, 999);
+        context.fill();
+        context.fillStyle = "#fefefe";
+        context.fillText(avatar.username, baseX + size / 2, labelY);
+        context.restore();
       }
 
       rafId = requestAnimationFrame(draw);
