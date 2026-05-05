@@ -227,10 +227,25 @@ export default function OverlayClient({
         context.shadowColor = "rgba(0, 0, 0, 0.85)";
         context.shadowBlur = 10;
         const labelWidth = Math.min(size + 80, Math.max(120, context.measureText(avatar.username).width + 24));
+        const labelX = baseX + size / 2 - labelWidth / 2;
+        const labelBoxY = labelY - 22;
+        const labelBoxHeight = 30;
+        const labelBoxRadius = 12;
+        
         context.fillStyle = "rgba(9, 16, 14, 0.5)";
         context.beginPath();
-        context.roundRect(baseX + size / 2 - labelWidth / 2, labelY - 22, labelWidth, 30, 999);
+        context.moveTo(labelX + labelBoxRadius, labelBoxY);
+        context.lineTo(labelX + labelWidth - labelBoxRadius, labelBoxY);
+        context.quadraticCurveTo(labelX + labelWidth, labelBoxY, labelX + labelWidth, labelBoxY + labelBoxRadius);
+        context.lineTo(labelX + labelWidth, labelBoxY + labelBoxHeight - labelBoxRadius);
+        context.quadraticCurveTo(labelX + labelWidth, labelBoxY + labelBoxHeight, labelX + labelWidth - labelBoxRadius, labelBoxY + labelBoxHeight);
+        context.lineTo(labelX + labelBoxRadius, labelBoxY + labelBoxHeight);
+        context.quadraticCurveTo(labelX, labelBoxY + labelBoxHeight, labelX, labelBoxY + labelBoxHeight - labelBoxRadius);
+        context.lineTo(labelX, labelBoxY + labelBoxRadius);
+        context.quadraticCurveTo(labelX, labelBoxY, labelX + labelBoxRadius, labelBoxY);
+        context.closePath();
         context.fill();
+        
         context.fillStyle = "#fefefe";
         context.fillText(avatar.username, baseX + size / 2, labelY);
         context.restore();
@@ -308,18 +323,19 @@ export default function OverlayClient({
           throw new Error(payload.error ?? "Event alınamadı.");
         }
 
-        for (const event of payload.events) {
-          spawnAvatar(event);
+        if (payload.events && payload.events.length > 0) {
+          console.log(`[Overlay] ${payload.events.length} event geldi`, payload.events);
+          for (const event of payload.events) {
+            spawnAvatar(event);
+          }
         }
 
         cursorRef.current = payload.nextCursor;
       } catch (reason) {
         if (!cancelled) {
-          setStatus(
-            reason instanceof Error
-              ? `Bağlantı sorunu: ${reason.message}`
-              : "Bağlantı sorunu",
-          );
+          const msg = reason instanceof Error ? reason.message : "Bilinmeyen sorun";
+          console.error(`[Overlay] Polling hatası: ${msg}`, reason);
+          setStatus(`Bağlantı sorunu: ${msg}`);
         }
       } finally {
         if (!cancelled) {

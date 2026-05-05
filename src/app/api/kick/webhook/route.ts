@@ -64,14 +64,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const parsedChatEvent = parseChatMessageEvent(eventType, payload);
   if (!parsedChatEvent) {
+    console.log("[Webhook] Event parse başarısız", { eventType, payloadKeys: Object.keys(payload ?? {}) });
     return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
   }
+
+  console.log("[Webhook] Event parse başarılı", {
+    broadcasterUserId: parsedChatEvent.broadcasterUserId,
+    sender: parsedChatEvent.senderUsername,
+    content: parsedChatEvent.content.slice(0, 50),
+  });
 
   await pushOverlayEvent(parsedChatEvent.broadcasterUserId, {
     id: `${messageId}-${parsedChatEvent.eventId}`,
     senderUsername: parsedChatEvent.senderUsername,
     content: parsedChatEvent.content,
     createdAt: parsedChatEvent.createdAt,
+  });
+
+  console.log("[Webhook] Event kaydedildi", {
+    key: `overlay-events:${parsedChatEvent.broadcasterUserId}`,
   });
 
   return NextResponse.json({ ok: true }, { status: 200 });

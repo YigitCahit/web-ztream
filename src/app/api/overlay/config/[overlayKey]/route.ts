@@ -27,8 +27,11 @@ export async function GET(
 
   const profile = await getUserProfileByOverlayLookup(overlayKey, userIdHint);
   if (!profile) {
+    console.log("[Overlay Config] Profil bulunamadı", { overlayKey, userIdHint });
     return NextResponse.json({ error: "Overlay bulunamadi." }, { status: 404 });
   }
+
+  console.log("[Overlay Config] Profil bulundu", { userId: profile.userId, username: profile.username });
 
   const activeCharacter = getActiveCharacter(profile);
 

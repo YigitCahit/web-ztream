@@ -26,6 +26,7 @@ export async function GET(
   const profile = await getUserProfileByOverlayLookup(overlayKey, userIdHint);
 
   if (!profile) {
+    console.log("[Overlay Events] Profil bulunamadı", { overlayKey, userIdHint });
     return NextResponse.json({ error: "Overlay bulunamadi." }, { status: 404 });
   }
 
@@ -38,6 +39,13 @@ export async function GET(
     .filter((event) => event.createdAt > safeCursor)
     .sort((left, right) => left.createdAt - right.createdAt)
     .slice(-100);
+
+  console.log("[Overlay Events] Event'ler okundu", {
+    userId: profile.userId,
+    toplam: events.length,
+    yeni: freshEvents.length,
+    cursor: safeCursor,
+  });
 
   const latestTimestamp = freshEvents.at(-1)?.createdAt ?? safeCursor;
 
