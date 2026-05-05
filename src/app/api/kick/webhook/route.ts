@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { parseChatMessageEvent, verifyKickWebhookSignature } from "@/lib/kick";
 import { keys } from "@/lib/keys";
-import { getUserProfileById, pushOverlayEvent } from "@/lib/profile";
+import { pushOverlayEvent } from "@/lib/profile";
 import { setIfAbsent } from "@/lib/store";
 
 export const runtime = "nodejs";
@@ -67,12 +67,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
   }
 
-  const targetProfile = await getUserProfileById(parsedChatEvent.broadcasterUserId);
-  if (!targetProfile) {
-    return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
-  }
-
-  await pushOverlayEvent(targetProfile.userId, {
+  await pushOverlayEvent(parsedChatEvent.broadcasterUserId, {
     id: `${messageId}-${parsedChatEvent.eventId}`,
     senderUsername: parsedChatEvent.senderUsername,
     content: parsedChatEvent.content,
