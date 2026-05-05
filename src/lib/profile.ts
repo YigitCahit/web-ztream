@@ -7,7 +7,6 @@ import {
   appendToList,
   deleteKey,
   getJson,
-  getStorageMode,
   readList,
   setJson,
 } from "@/lib/store";
@@ -145,11 +144,9 @@ export async function getUserProfileByOverlayLookup(
 
   const byUserId = await getUserProfileById(userIdHint);
   if (!byUserId) {
-    if (getStorageMode() !== "memory") {
-      return null;
-    }
-
     try {
+      // Rebuild a missing profile from the overlay URL hint so overlays stay usable
+      // after a cache/kv reset instead of failing with a hard 404.
       return await getOrCreateUserProfile(
         userIdHint,
         `user-${userIdHint}`,
