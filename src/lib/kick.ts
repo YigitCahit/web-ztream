@@ -297,7 +297,10 @@ export function parseChatMessageEvent(
   const sender = asObject(root.sender);
 
   const broadcasterUserId = Number(
-    broadcaster?.user_id ?? root.broadcaster_user_id ?? NaN,
+    broadcaster?.user_id ?? 
+    root.broadcaster_user_id ?? 
+    root.broadcaster?.user_id ?? 
+    NaN,
   );
 
   const senderUsername =

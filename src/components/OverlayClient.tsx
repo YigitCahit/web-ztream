@@ -275,6 +275,7 @@ export default function OverlayClient({
     const spawnAvatar = (event: OverlayEvent) => {
       const canvas = canvasRef.current;
       if (!canvas) {
+        console.warn("[Overlay] Canvas bulunamadı, avatar spawn edilemiyor", event.senderUsername);
         return;
       }
 
@@ -303,6 +304,11 @@ export default function OverlayClient({
         tick: 0,
         expiresAt: Date.now() + lifetime,
       });
+        console.log("[Overlay] Avatar spawn başarılı", {
+          sender: event.senderUsername,
+          toplam: avatarsRef.current.length,
+          lifetime,
+        });
     };
 
     const poll = async () => {
@@ -328,9 +334,26 @@ export default function OverlayClient({
           for (const event of payload.events) {
             spawnAvatar(event);
           }
+        } else {
+          console.log("[Overlay] Polling - event yok", { 
+            events: payload.events?.length ?? 0,
+            cursor: cursorRef.current,
+            nextCursor: payload.nextCursor 
+          });
         }
 
         cursorRef.current = payload.nextCursor;
+        
+          if (!config) {
+            return;
+          }
+        
+          setStatus((prev) => {
+            if (prev.startsWith("Canlı:")) {
+              return `${prev} | ${avatarsRef.current.length} avatar | ${payload.events?.length ?? 0} yeni`;
+            }
+            return prev;
+          });
       } catch (reason) {
         if (!cancelled) {
           const msg = reason instanceof Error ? reason.message : "Bilinmeyen sorun";

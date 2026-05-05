@@ -26,6 +26,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  console.log("[Webhook] İstek alındı", { messageId, eventType: request.headers.get("kick-event-type") });
+
   const rawBody = await request.text();
 
   const signatureOk = await verifyKickWebhookSignature({
@@ -36,6 +38,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   });
 
   if (!signatureOk) {
+    console.warn("[Webhook] İmza doğrulama başarısız", { messageId });
     return NextResponse.json(
       { ok: false, error: "Webhook imzasi gecersiz." },
       { status: 401 },
