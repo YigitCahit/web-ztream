@@ -51,6 +51,7 @@ export default function OverlayClient({
   const avatarsRef = useRef<Avatar[]>([]);
   const cursorRef = useRef(0);
   const spriteRef = useRef<HTMLImageElement | null>(null);
+  const spriteHeadOffsetRatioRef = useRef(0);
 
   const [config, setConfig] = useState<OverlayConfigResponse | null>(null);
   const [status, setStatus] = useState("Overlay hazırlanıyor...");
@@ -127,11 +128,56 @@ export default function OverlayClient({
       return;
     }
 
+    const computeHeadOffset = (src: string, frameWidth: number) => {
+      const probe = new Image();
+      probe.crossOrigin = "anonymous";
+      probe.onload = () => {
+        try {
+          const frameH = probe.naturalHeight;
+          const fw = frameWidth > 0 ? frameWidth : probe.naturalHeight;
+          if (frameH <= 0 || fw <= 0) {
+            return;
+          }
+
+          const tmp = document.createElement("canvas");
+          tmp.width = fw;
+          tmp.height = frameH;
+          const tmpCtx = tmp.getContext("2d", { willReadFrequently: true });
+          if (!tmpCtx) {
+            return;
+          }
+
+          tmpCtx.drawImage(probe, 0, 0);
+          const data = tmpCtx.getImageData(0, 0, fw, frameH).data;
+
+          let topPx = 0;
+          outer: for (let y = 0; y < frameH; y++) {
+            for (let x = 0; x < fw; x++) {
+              if (data[(y * fw + x) * 4 + 3] > 0) {
+                topPx = y;
+                break outer;
+              }
+            }
+          }
+
+          spriteHeadOffsetRatioRef.current = topPx / frameH;
+        } catch {
+          // CORS or other error — keep default 0
+        }
+      };
+      probe.onerror = () => {
+        // CORS-blocked or load failure — keep default 0
+      };
+      probe.src = src;
+    };
+
+    const spriteSrc = config.character.spriteUrl || "/karakter.png";
     const sprite = new Image();
-    sprite.src = config.character.spriteUrl || "/karakter.png";
+    sprite.src = spriteSrc;
 
     sprite.onload = () => {
       spriteRef.current = sprite;
+      computeHeadOffset(spriteSrc, config.character.frameWidth || sprite.naturalHeight);
     };
 
     sprite.onerror = () => {
@@ -139,6 +185,7 @@ export default function OverlayClient({
       fallback.src = "/karakter.png";
       fallback.onload = () => {
         spriteRef.current = fallback;
+        computeHeadOffset("/karakter.png", config.character.frameWidth || fallback.naturalHeight);
       };
     };
   }, [config]);
@@ -196,7 +243,7 @@ export default function OverlayClient({
         const baseX = avatar.x;
         const baseY = avatar.y;
         const size = character.displaySize;
-        const labelY = Math.max(24, baseY + size * 0.18);
+        const labelY = Math.max(24, baseY + size * spriteHeadOffsetRatioRef.current);
 
         if (spriteReady && sprite) {
           const sx = avatar.frame * character.frameWidth;
