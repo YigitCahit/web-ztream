@@ -54,6 +54,7 @@ export default function OverlayClient({
 
   const [config, setConfig] = useState<OverlayConfigResponse | null>(null);
   const [status, setStatus] = useState("Overlay hazırlanıyor...");
+  const [statusVisible, setStatusVisible] = useState(true);
 
   useEffect(() => {
     let stopped = false;
@@ -96,6 +97,30 @@ export default function OverlayClient({
       window.clearInterval(interval);
     };
   }, [overlayKey, userIdHint]);
+
+  useEffect(() => {
+    document.body.classList.add("overlay-body");
+    document.documentElement.classList.add("overlay-body");
+    return () => {
+      document.body.classList.remove("overlay-body");
+      document.documentElement.classList.remove("overlay-body");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!config) {
+      return;
+    }
+
+    const lifetime = clamp(8_000, config.settings.avatarLifetimeMs, 180_000);
+    const hideTimer = window.setTimeout(() => {
+      setStatusVisible(false);
+    }, lifetime);
+
+    return () => {
+      window.clearTimeout(hideTimer);
+    };
+  }, [config]);
 
   useEffect(() => {
     if (!config) {
@@ -173,13 +198,6 @@ export default function OverlayClient({
         const size = character.displaySize;
         const labelY = Math.max(18, baseY - 12);
 
-        context.save();
-        context.fillStyle = "rgba(15, 28, 25, 0.28)";
-        context.beginPath();
-        context.ellipse(baseX + size / 2, baseY + size / 2, size * 0.48, size * 0.42, 0, 0, Math.PI * 2);
-        context.fill();
-        context.restore();
-
         if (spriteReady && sprite) {
           const sx = avatar.frame * character.frameWidth;
           context.save();
@@ -222,31 +240,16 @@ export default function OverlayClient({
         }
 
         context.save();
-        context.font = "700 20px var(--font-space-grotesk), sans-serif";
+        context.font = "700 22px var(--font-space-grotesk), sans-serif";
         context.textAlign = "center";
-        context.shadowColor = "rgba(0, 0, 0, 0.85)";
-        context.shadowBlur = 10;
-        const labelWidth = Math.min(size + 80, Math.max(120, context.measureText(avatar.username).width + 24));
-        const labelX = baseX + size / 2 - labelWidth / 2;
-        const labelBoxY = labelY - 22;
-        const labelBoxHeight = 30;
-        const labelBoxRadius = 12;
-        
-        context.fillStyle = "rgba(9, 16, 14, 0.5)";
-        context.beginPath();
-        context.moveTo(labelX + labelBoxRadius, labelBoxY);
-        context.lineTo(labelX + labelWidth - labelBoxRadius, labelBoxY);
-        context.quadraticCurveTo(labelX + labelWidth, labelBoxY, labelX + labelWidth, labelBoxY + labelBoxRadius);
-        context.lineTo(labelX + labelWidth, labelBoxY + labelBoxHeight - labelBoxRadius);
-        context.quadraticCurveTo(labelX + labelWidth, labelBoxY + labelBoxHeight, labelX + labelWidth - labelBoxRadius, labelBoxY + labelBoxHeight);
-        context.lineTo(labelX + labelBoxRadius, labelBoxY + labelBoxHeight);
-        context.quadraticCurveTo(labelX, labelBoxY + labelBoxHeight, labelX, labelBoxY + labelBoxHeight - labelBoxRadius);
-        context.lineTo(labelX, labelBoxY + labelBoxRadius);
-        context.quadraticCurveTo(labelX, labelBoxY, labelX + labelBoxRadius, labelBoxY);
-        context.closePath();
-        context.fill();
-        
-        context.fillStyle = "#fefefe";
+        context.textBaseline = "alphabetic";
+        context.lineWidth = 4;
+        context.strokeStyle = "rgba(0, 0, 0, 0.85)";
+        context.shadowColor = "rgba(0, 0, 0, 0.65)";
+        context.shadowBlur = 6;
+        context.strokeText(avatar.username, baseX + size / 2, labelY);
+        context.shadowBlur = 0;
+        context.fillStyle = "#ffffff";
         context.fillText(avatar.username, baseX + size / 2, labelY);
         context.restore();
       }
@@ -343,17 +346,14 @@ export default function OverlayClient({
         }
 
         cursorRef.current = payload.nextCursor;
-        
-          if (!config) {
-            return;
-          }
-        
-          setStatus((prev) => {
-            if (prev.startsWith("Canlı:")) {
-              return `${prev} | ${avatarsRef.current.length} avatar | ${payload.events?.length ?? 0} yeni`;
-            }
-            return prev;
-          });
+
+        if (!config) {
+          return;
+        }
+
+        setStatus(
+          `Canlı: ${config.username} | ${avatarsRef.current.length} avatar | ${payload.events?.length ?? 0} yeni`,
+        );
       } catch (reason) {
         if (!cancelled) {
           const msg = reason instanceof Error ? reason.message : "Bilinmeyen sorun";
@@ -378,7 +378,7 @@ export default function OverlayClient({
 
   return (
     <div className="overlay-stage">
-      <div className="overlay-status">{status}</div>
+      {statusVisible ? <div className="overlay-status">{status}</div> : null}
       <canvas ref={canvasRef} className="overlay-canvas" />
     </div>
   );
