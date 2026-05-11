@@ -196,7 +196,7 @@ export default function OverlayClient({
         const baseX = avatar.x;
         const baseY = avatar.y;
         const size = character.displaySize;
-        const labelY = Math.max(18, baseY - 12);
+        const labelY = Math.max(24, baseY + size * 0.18);
 
         if (spriteReady && sprite) {
           const sx = avatar.frame * character.frameWidth;
@@ -240,9 +240,9 @@ export default function OverlayClient({
         }
 
         context.save();
-        context.font = "700 22px var(--font-space-grotesk), sans-serif";
+        context.font = "700 20px var(--font-space-grotesk), sans-serif";
         context.textAlign = "center";
-        context.textBaseline = "alphabetic";
+        context.textBaseline = "bottom";
         context.lineWidth = 4;
         context.strokeStyle = "rgba(0, 0, 0, 0.85)";
         context.shadowColor = "rgba(0, 0, 0, 0.65)";
