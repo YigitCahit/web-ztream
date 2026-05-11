@@ -50,6 +50,7 @@ export default function OverlayClient({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const avatarsRef = useRef<Avatar[]>([]);
   const cursorRef = useRef(0);
+  const cursorInitializedRef = useRef(false);
   const spriteRef = useRef<HTMLImageElement | null>(null);
   const spriteHeadOffsetRatioRef = useRef(0);
 
@@ -320,7 +321,10 @@ export default function OverlayClient({
     }
 
     let cancelled = false;
-    cursorRef.current = 0;
+    if (!cursorInitializedRef.current) {
+      cursorRef.current = Date.now();
+      cursorInitializedRef.current = true;
+    }
 
     const spawnAvatar = (event: OverlayEvent) => {
       const canvas = canvasRef.current;
