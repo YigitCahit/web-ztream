@@ -400,14 +400,6 @@ export default function OverlayClient({
         }
 
         cursorRef.current = payload.nextCursor;
-
-        if (!config) {
-          return;
-        }
-
-        setStatus(
-          `Canlı: ${config.username} | ${avatarsRef.current.length} avatar | ${payload.events?.length ?? 0} yeni`,
-        );
       } catch (reason) {
         if (!cancelled) {
           const msg = reason instanceof Error ? reason.message : "Bilinmeyen sorun";
