@@ -109,20 +109,23 @@ export default function OverlayClient({
     };
   }, []);
 
+  const statusLifetime = config
+    ? clamp(8_000, config.settings.avatarLifetimeMs, 180_000)
+    : null;
+
   useEffect(() => {
-    if (!config) {
+    if (statusLifetime === null) {
       return;
     }
 
-    const lifetime = clamp(8_000, config.settings.avatarLifetimeMs, 180_000);
     const hideTimer = window.setTimeout(() => {
       setStatusVisible(false);
-    }, lifetime);
+    }, statusLifetime);
 
     return () => {
       window.clearTimeout(hideTimer);
     };
-  }, [config]);
+  }, [statusLifetime]);
 
   useEffect(() => {
     if (!config) {
